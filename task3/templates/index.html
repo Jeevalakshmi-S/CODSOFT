@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 50%;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px gray;
+        }
+        input, button {
+            width: 90%;
+            margin: 10px;
+            padding: 8px;
+            font-size: 16px;
+        }
+        button {
+            background: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .contact-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .contact-item {
+            background: #e4e4e4;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Contact Manager</h2>
+
+        <h3>Add Contact</h3>
+        <input type="text" id="name" placeholder="Name">
+        <input type="text" id="phone" placeholder="Phone Number">
+        <input type="email" id="email" placeholder="Email">
+        <input type="text" id="address" placeholder="Address">
+        <button onclick="addContact()">Add Contact</button>
+
+        <h3>Search Contact</h3>
+        <input type="text" id="searchQuery" placeholder="Search by Name or Phone">
+        <button onclick="searchContact()">Search</button>
+
+        <h3>Contact List</h3>
+        <div id="contactList" class="contact-list"></div>
+    </div>
+
+    <script>
+        async function loadContacts() {
+            const response = await fetch('/contacts');
+            const contacts = await response.json();
+            displayContacts(contacts);
+        }
+
+        async function addContact() {
+            const name = document.getElementById("name").value;
+            const phone = document.getElementById("phone").value;
+            const email = document.getElementById("email").value;
+            const address = document.getElementById("address").value;
+
+            const response = await fetch('/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone, email, address })
+            });
+
+            await response.json();
+            loadContacts();
+        }
+
+        async function searchContact() {
+            const query = document.getElementById("searchQuery").value;
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+
+            const results = await response.json();
+            displayContacts(results);
+        }
+
+        function displayContacts(contacts) {
+            const list = document.getElementById("contactList");
+            list.innerHTML = "";
+            contacts.forEach(contact => {
+                list.innerHTML += `
+                    <div class="contact-item">
+                        <strong>${contact.name}</strong> (${contact.phone})<br>
+                        ${contact.email}, ${contact.address}
+                        <button onclick="deleteContact('${contact.phone}')">Delete</button>
+                        <button onclick="updateContact('${contact.phone}')">Update</button>
+                    </div>
+                `;
+            });
+        }
+
+        async function deleteContact(phone) {
+            await fetch('/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            loadContacts();
+        }
+
+        function updateContact(oldPhone) {
+            const name = prompt("Enter new name:");
+            const phone = prompt("Enter new phone:");
+            const email = prompt("Enter new email:");
+            const address = prompt("Enter new address:");
+
+            fetch('/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ old_phone: oldPhone, name, phone, email, address })
+            }).then(() => loadContacts());
+        }
+
+        loadContacts();
+    </script>
+</body>
+</html>
